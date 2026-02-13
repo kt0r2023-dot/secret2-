@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special for You</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-pink: #ffafbd;
+            --soft-white: #fffafa;
+            --gold: #d4af37;
+            --accent-red: #ff4b2b;
+            --glass: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #0a0a0a;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease, transform 1s ease;
+            z-index: 10;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.1);
+        }
+
+        /* --- Экран 1: Код --- */
+        #screen-lock { background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
+        .particles-canvas { position: absolute; top: 0; left: 0; z-index: -1; }
+        .lock-container {
+            text-align: center;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            max-width: 90%;
+        }
+        #code-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--primary-pink);
+            color: white;
+            font-size: 2rem;
+            text-align: center;
+            width: 120px;
+            outline: none;
+            letter-spacing: 5px;
+        }
+        #code-input.error { border-color: var(--accent-red); animation: shake 0.5s ease; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* --- Экран 2: Ворота --- */
+        #screen-gates { background: black; perspective: 1000px; }
+        .gate-wrapper { position: relative; width: 100%; height: 100%; display: flex; }
+        .gate {
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, #111, #222);
+            border: 2px solid var(--gold);
+            position: relative;
+            transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .gate-left { transform-origin: left; border-right: none; }
+        .gate-right { transform-origin: right; border-left: none; }
+        .gate.open-left { transform: rotateY(-110deg); }
+        .gate.open-right { transform: rotateY(110deg); }
+
+        /* --- Экран 3: Подтверждение --- */
+        #screen-confirm { background: var(--soft-white); color: #333; }
+        .confirm-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-group {
+            position: relative;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        .btn {
+            padding: 12px 35px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 1rem;
+        }
+        .btn-yes { background: var(--primary-pink); color: white; position: relative; z-index: 10; }
+        .btn-no { background: #eee; color: #777; position: relative; z-index: 5; }
+
+        /* --- Основной экран --- */
+        #screen-main {
+            background: linear-gradient(135deg, #fff5f7 0%, #ffffff 100%);
+            color: #444;
+            overflow-y: auto;
+            justify-content: flex-start;
+            padding: 40px 20px;
+        }
+        .main-title { font-family: 'Great Vibes', cursive; font-size: 3.5rem; color: var(--accent-red); margin-bottom: 10px; }
+        .wish-list {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(255, 175, 189, 0.2);
+            margin-bottom: 40px;
+        }
+        .wish-item { margin-bottom: 15px; display: flex; align-items: center; opacity: 0; transform: translateY(20px); }
+        .timer-container {
+            background: white; padding: 25px; border-radius: 25px;
+            border: 1px solid var(--primary-pink);
+        }
+        .timer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .timer-val { font-size: 1.5rem; font-weight: 600; color: var(--accent-red); }
+        .heart { position: absolute; color: var(--primary-pink); pointer-events: none; z-index: 100; }
+
+        .fade-up { animation: fadeUp 1s forwards ease-out; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        .white-flash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; z-index: 1000; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="https://eu.hitmo-top.com/get/music/20230509/neheart_-_snowfall_75941790.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="white-flash" id="flash"></div>
+
+    <section id="screen-lock" class="screen">
+        <canvas id="particles" class="particles-canvas"></canvas>
+        <div class="lock-container">
+            <h2>Введите код доступа</h2>
+            <input type="password" id="code-input" maxlength="4" placeholder="••••" autofocus>
+            <p style="margin-top: 15px; font-size: 0.8rem; color: #666;">подсказок не будет</p>
+        </div>
+    </section>
+
+    <section id="screen-gates" class="screen hidden">
+        <div class="gate-wrapper">
+            <div class="gate gate-left" id="g-left"></div>
+            <div class="gate gate-right" id="g-right"></div>
+        </div>
+    </section>
+
+    <section id="screen-confirm" class="screen hidden">
+        <div class="confirm-box">
+            <h2 id="confirm-text">Ты точно хочешь посмотреть открытку?</h2>
+            <div class="btn-group">
+                <button id="btn-no" class="btn btn-no">НЕТ</button>
+                <button id="btn-yes" class="btn btn-yes">ДА</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-main" class="screen hidden">
+        <div class="main-content" style="max-width: 600px; width: 100%; text-align: center;">
+            <h1 class="main-title">Для Дианы</h1>
+            <p style="color:#888; margin-bottom: 40px;">— от всего сердца —</p>
+            
+            <div class="wish-list">
+                <p style="margin-bottom: 20px; font-style: italic; color: #666;">Люблю тебя за то, что...</p>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> ты очень особенная</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> твоя искренность вдохновляет</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> у тебя замечательный характер</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> с тобой безумна интересно</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> ты лучшая</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> спасибо за твоё общение</div>
+                <div class="wish-item"><span style="color:red; margin-right:10px;">❤</span> это подарок от души</div>
+            </div>
+
+            <div class="timer-container">
+                <span style="font-size: 0.9rem; color: #999;">Мы общаемся уже:</span>
+                <div id="timer" class="timer-grid">
+                    <div class="timer-unit"><span class="timer-val" id="t-mon">0</span><br><small>Мес.</small></div>
+                    <div class="timer-unit"><span class="timer-val" id="t-day">0</span><br><small>Дн.</small></div>
+                    <div class="timer-unit"><span class="timer-val" id="t-hrs">0</span><br><small>Час.</small></div>
+                    <div class="timer-unit"><span class="timer-val" id="t-min">0</span><br><small>Мин.</small></div>
+                    <div class="timer-unit" style="grid-column: span 2;"><span class="timer-val" id="t-sec">0</span><br><small>Сек.</small></div>
+                </div>
+            </div>
+            <p style="margin-top: 40px; color: #aaa; font-size: 0.8rem;">С Днём святого Валентина! ✨</p>
+        </div>
+    </section>
+
+    <script>
+        const audio = document.getElementById('bg-music');
+        const codeInput = document.getElementById('code-input');
+        const flash = document.getElementById('flash');
+        const btnNo = document.getElementById('btn-no');
+        const btnYes = document.getElementById('btn-yes');
+
+        // --- ЭКРАН 1: ЛОГИКА КОДА ---
+        codeInput.addEventListener('input', (e) => {
+            if (e.target.value === '2941') {
+                audio.play().catch(() => {});
+                document.getElementById('screen-lock').classList.add('hidden');
+                setTimeout(() => {
+                    document.getElementById('screen-gates').classList.remove('hidden');
+                    setTimeout(openGates, 1000);
+                }, 1000);
+            } else if (e.target.value.length === 4) {
+                codeInput.classList.add('error');
+                setTimeout(() => { codeInput.classList.remove('error'); codeInput.value = ''; }, 600);
+            }
+        });
+
+        function openGates() {
+            document.getElementById('g-left').classList.add('open-left');
+            document.getElementById('g-right').classList.add('open-right');
+            setTimeout(() => {
+                flash.style.opacity = '1';
+                setTimeout(() => {
+                    document.getElementById('screen-gates').classList.add('hidden');
+                    document.getElementById('screen-confirm').classList.remove('hidden');
+                    flash.style.opacity = '0';
+                }, 1500);
+            }, 2500);
+        }
+
+        // --- ЭКРАН 3: УБЕГАЮЩАЯ КНОПКА ---
+        function moveNo() {
+            // Кнопка НЕТ убегает далеко
+            const randomX = (Math.random() - 0.5) * 500;
+            const randomY = (Math.random() - 0.5) * 500;
+            btnNo.style.transform = `translate(${randomX}px, ${randomY}px) scale(0)`;
+            btnNo.style.opacity = '0';
+            btnNo.style.pointerEvents = 'none';
+
+            // Кнопка ДА медленно идет на центр и увеличивается
+            btnYes.style.transform = 'scale(1.5)';
+            btnYes.style.transition = 'all 1.5s ease-in-out';
+            document.getElementById('confirm-text').innerText = "Ты ТОЧНО хочешь посмотреть?";
+        }
+
+        btnNo.addEventListener('mouseover', moveNo);
+        btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
+
+        btnYes.addEventListener('click', () => {
+            // Красивая анимация перед финалом
+            for(let i=0; i<30; i++) { setTimeout(createHeart, i * 50); }
+            
+            setTimeout(() => {
+                document.getElementById('screen-confirm').classList.add('hidden');
+                document.getElementById('screen-main').classList.remove('hidden');
+                initMainScene();
+            }, 1000);
+        });
+
+        // --- ФИНАЛЬНЫЙ ЭКРАН ---
+        function initMainScene() {
+            const items = document.querySelectorAll('.wish-item');
+            items.forEach((item, i) => {
+                setTimeout(() => item.classList.add('fade-up'), i * 300);
+            });
+            setInterval(createHeart, 400);
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerHTML = '❤';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.top = '-20px';
+            heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            document.body.appendChild(heart);
+            
+            const duration = Math.random() * 3 + 2;
+            heart.animate([
+                { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                { transform: `translateY(100vh) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+            ], { duration: duration * 1000, easing: 'linear' });
+
+            setTimeout(() => heart.remove(), duration * 1000);
+        }
+
+        function updateTimer() {
+            const startDate = new Date('2025-10-30T00:00:00');
+            const diff = new Date() - startDate;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            const months = Math.floor(days / 30.44);
+
+            document.getElementById('t-mon').innerText = months;
+            document.getElementById('t-day').innerText = Math.floor(days % 30.44);
+            document.getElementById('t-hrs').innerText = hours % 24;
+            document.getElementById('t-min').innerText = minutes % 60;
+            document.getElementById('t-sec').innerText = seconds % 60;
+        }
+
+        // Частицы для первого экрана
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let pts = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.onresize = resize; resize();
+        for(let i=0; i<80; i++) pts.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, vx: Math.random()-0.5, vy: Math.random()-0.5});
+        function anim() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            pts.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x<0) p.x=canvas.width; if(p.y<0) p.y=canvas.height;
+                if(p.x>canvas.width) p.x=0; if(p.y>canvas.height) p.y=0;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
+            });
+            requestAnimationFrame(anim);
+        }
+        anim();
+    </script>
+</body>
+</html>
